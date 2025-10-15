@@ -1,27 +1,42 @@
-class NaveDeCarga {
+class Nave{
+	var property velocidad = 0 
+	const property velocidadMaxima = 300000 
 
-	var velocidad = 0
+	method propulsar(){
+		velocidad = velocidad+20000.min(velocidadMaxima)
+	}
+
+	method prepararParaViajar(){
+		velocidad = velocidad+15000.min(velocidadMaxima)
+	}
+}
+
+class NaveDeCarga inherits Nave {
+
 	var property carga = 0
 
 	method sobrecargada() = carga > 100000
 
 	method excedidaDeVelocidad() = velocidad > 100000
 
-	method recibirAmenaza() {
+	method liberarCarga(){
 		carga = 0
+	}
+
+	method recibirAmenaza() {
+		self.liberarCarga()
 	}
 
 }
 
-class NaveDePasajeros {
-
-	var velocidad = 0
+class NaveDePasajeros inherits Nave{
 	var property alarma = false
+	const tripulacionDeABordo = 4
 	const cantidadDePasajeros = 0
 
-	method tripulacion() = cantidadDePasajeros + 4
+	method cantTripulantesTotal() = cantidadDePasajeros + tripulacionDeABordo
 
-	method velocidadMaximaLegal() = 300000 / self.tripulacion() - if (cantidadDePasajeros > 100) 200 else 0
+	method velocidadMaximaLegal() = velocidadMaxima / self.cantTripulantesTotal() - if (cantidadDePasajeros > 100) 200 else 0
 
 	method estaEnPeligro() = velocidad > self.velocidadMaximaLegal() or alarma
 
@@ -31,10 +46,13 @@ class NaveDePasajeros {
 
 }
 
-class NaveDeCombate {
-	var property velocidad = 0
+class NaveDeCombate inherits Nave{
 	var property modo = reposo
 	const property mensajesEmitidos = []
+
+	method armasDesplegadas() = modo.armasDesplegadas()
+	
+	method cambiarModo() = modo.opuesto()
 
 	method emitirMensaje(mensaje) {
 		mensajesEmitidos.add(mensaje)
@@ -42,30 +60,67 @@ class NaveDeCombate {
 	
 	method ultimoMensaje() = mensajesEmitidos.last()
 
-	method estaInvisible() = velocidad < 10000 and modo.invisible()
+	method estaInvisible() = modo.invisibilidad(self)
 
 	method recibirAmenaza() {
 		modo.recibirAmenaza(self)
 	}
 
+	override method prepararParaViajar(){
+		super()
+		modo.prepararParaViajar(self)
+	}
+
 }
+
+class NaveDeCargaRadioactiva inherits NaveDeCarga{
+	var property selladoAlVacio = false
+
+	override method recibirAmenaza(){
+		selladoAlVacio = true
+		velocidad = 0
+	}
+
+	override method prepararParaViajar(){
+		super()
+		selladoAlVacio = true
+	}
+}
+
 
 object reposo {
 
-	method invisible() = false
+	var armasDesplegadas = false
+
+	method opuesto() = ataque
+
+	method invisibilidad(nave) = nave.velocidad() > 10000
 
 	method recibirAmenaza(nave) {
 		nave.emitirMensaje("¡RETIRADA!")
 	}
 
+	method prepararParaViajar(nave){
+		nave.emitirMensaje("Saliendo en misión")
+		nave.cambiarModo()
+	}
+
 }
 
 object ataque {
+	var armasDesplegadas = true
 
-	method invisible() = true
+	method opuesto() = reposo
+
+	method invisibilidad() = not armasDesplegadas
 
 	method recibirAmenaza(nave) {
 		nave.emitirMensaje("Enemigo encontrado")
+		armasDesplegadas = true
+	}
+
+	method prepararParaViajar(nave){
+		nave.emitirMensaje("Volviendo a la base")
 	}
 
 }
